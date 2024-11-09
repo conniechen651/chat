@@ -1,5 +1,6 @@
 import selectors
 import sys
+import re
 from socket import *
 from requests import get
 
@@ -8,6 +9,7 @@ print("Type 'help' for available commands.\n")
 
 sel = selectors.DefaultSelector()
 
+## create server socket
 def start_server(port):
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.bind(('', int(port)))
@@ -16,11 +18,45 @@ def start_server(port):
     print("Listening on port " + str(port))
     sel.register(server_socket, selectors.EVENT_READ, handle_new_socket_connection)
 
+## create client socket
 def start_client(dest_ip, dest_port):
     client_socket = socket(AF_INET, SOCK_STREAM)
     client_socket.connect((dest_ip, int(dest_port)))
     client_socket.setblocking(False)
     print("Connected to " + dest_ip + " on port " + dest_port)
+    return client_socket
+
+## function to send a message, including the listening port number so it can be added to receiver's list of connections
+def send_message(connection_socket, message):
+    message = str(port) + ";" + message
+    connection_socket.send(message.encode())
+
+## function to handle new socket connection
+def handle_new_socket_connection(server_socket):
+    connection_socket, addr = server_socket.accept()
+    print("Connection from: " + str(addr))
+    sel.register(connection_socket, selectors.EVENT_READ, handle_socket_message)
+
+## function to handle messages received from other sockets
+def handle_socket_message(connection_socket):
+    data = connection_socket.recv(1024).decode().split(";") ## split message into listening port and data
+    listening_port = data[0]
+    data = data[1]
+    if data:
+        list_of_connections.append([connection_socket.getpeername()[0], listening_port, connection_socket])
+        print("Message received from: " + str(connection_socket.getpeername()[0]))
+        print("Sender's Port: " + str(connection_socket.getpeername()[1]))
+        print("Message: " + data) 
+    else:
+        print("Connection closed")
+        sel.unregister(connection_socket)
+        for i in range(len(list_of_connections)):
+            if list_of_connections[i][2] == connection_socket:
+                list_of_connections.pop(i)
+        connection_socket.close()
+
+## create list to store all connections
+list_of_connections = []
 
 def handle_stdin_input(data):
     data = input()
@@ -35,44 +71,62 @@ def handle_stdin_input(data):
         print("Type 'exit' to close all connections and exit the program")
         print("----------------------------------------------------")
         print()
+    ############### EXIT ###############
     elif data == "exit":
         ##server_socket.close()
         sys.exit()
+    
+    ############### MYIP ###############
     elif data == "myip":
         ## not working??
         hostname = gethostname()
         IPAddr = gethostbyname(hostname)
         DnsIPAddr = gethostbyaddr(hostname)
 
-        print("Your Computer Name is:" + str(hostname))
         print("Your Computer IP Address is:" + str(IPAddr))
         print("According to DNS, your Computer IP Address is:" + str(DnsIPAddr))
 
         ##print("Your IP is: " + gethostbyname(gethostname()))
         print()
+    
+    ############### MYPORT ###############
     elif data == "myport":
         print("Your port is: " + port)
         print()
+    
+    ############### CONNECT ###############
     elif data.startswith("connect"):
         dest_ip = data.split()[1]
         dest_port = data.split()[2]
-        start_client(dest_ip, dest_port)
+        client = start_client(dest_ip, dest_port) ## call function to create client socket
+        list_of_connections.append([dest_ip, dest_port, client]) ## add client to list of connections
+    
+    ############### LIST ###############
+    elif data == "list":
+        print("id:\tIP address:\t\tPort number:")
+        for i in range(len(list_of_connections)):
+            print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + list_of_connections[i][1])
+    
+    ############### TERMINATE ###############
+    elif data.startswith("terminate"):
+        connection_id = int(data.split()[1])
+        if connection_id <= len(list_of_connections):
+            list_of_connections[connection_id-1][2].close()
+            list_of_connections.pop(connection_id-1)
+        else:
+            print("Invalid connection ID. Try again.")
+
+    ############### SEND ###############
+    elif data.startswith("send"):
+        connection_id = int(data.split()[1])
+        message = re.split('(\d\s+)', data, 1)[2]
+        if connection_id <= len(list_of_connections):
+            send_message(list_of_connections[connection_id-1][2], message)
+            print("Message sent to " + list_of_connections[connection_id-1][0] + " on port " + list_of_connections[connection_id-1][1])
+        else:
+            print("Invalid connection ID. Try again.")
     else:
         print("Invalid command. Type 'help' for available commands.")
-
-def handle_new_socket_connection(server_socket):
-    connection_socket, addr = server_socket.accept()
-    print("Connection from: " + str(addr))
-    sel.register(connection_socket, selectors.EVENT_READ, handle_socket_message)
-
-def handle_socket_message(connection_socket):
-    data = connection_socket.recv(1024)
-    if data:
-        print("Received: " + data) 
-    else:
-        print("Connection closed")
-        sel.unregister(connection_socket)
-        connection_socket.close()
 
 def main():
     sel.register(sys.stdin, selectors.EVENT_READ, handle_stdin_input)
