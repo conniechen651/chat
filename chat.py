@@ -118,6 +118,9 @@ def handle_stdin_input(data):
 
     ############### SEND ###############
     elif data.startswith("send"):
+        if re.search('\d+\s', data) == None:
+            print("Invalid command. Try again.")
+            return
         connection_id = int(data.split()[1])
         message = re.split('(\d\s+)', data, 1)[2]
         if connection_id <= len(list_of_connections):
