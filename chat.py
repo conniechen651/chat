@@ -40,9 +40,10 @@ def handle_new_socket_connection(server_socket):
 ## function to handle messages received from other sockets
 def handle_socket_message(connection_socket):
     data = connection_socket.recv(1024).decode().split(";") ## split message into listening port and data
-    listening_port = data[0]
-    data = data[1]
+    print(data)
     if data:
+        listening_port = data[0]
+        data = data[1]
         list_of_connections.append([connection_socket.getpeername()[0], listening_port, connection_socket])
         print("Message received from: " + str(connection_socket.getpeername()[0]))
         print("Sender's Port: " + str(connection_socket.getpeername()[1]))
@@ -98,6 +99,10 @@ def handle_stdin_input(data):
     elif data.startswith("connect"):
         dest_ip = data.split()[1]
         dest_port = data.split()[2]
+        for i in range(len(list_of_connections)):
+            if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port:
+                print("Already connected to " + dest_ip + " on port " + dest_port)
+                return
         client = start_client(dest_ip, dest_port) ## call function to create client socket
         list_of_connections.append([dest_ip, dest_port, client]) ## add client to list of connections
     
@@ -105,7 +110,7 @@ def handle_stdin_input(data):
     elif data == "list":
         print("id:\tIP address:\t\tPort number:")
         for i in range(len(list_of_connections)):
-            print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + list_of_connections[i][1])
+            print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + str(list_of_connections[i][1]))
     
     ############### TERMINATE ###############
     elif data.startswith("terminate"):
@@ -118,14 +123,14 @@ def handle_stdin_input(data):
 
     ############### SEND ###############
     elif data.startswith("send"):
-        if re.search('\d+\s', data) == None:
+        if re.search('\d+\s', data) == None: ## error checking to make sure there is a connection ID
             print("Invalid command. Try again.")
             return
         connection_id = int(data.split()[1])
         message = re.split('(\d\s+)', data, 1)[2]
         if connection_id <= len(list_of_connections):
             send_message(list_of_connections[connection_id-1][2], message)
-            print("Message sent to " + list_of_connections[connection_id-1][0] + " on port " + list_of_connections[connection_id-1][1])
+            print("Message sent to " + str(list_of_connections[connection_id-1][0]) + " on port " + str(list_of_connections[connection_id-1][1]))
         else:
             print("Invalid connection ID. Try again.")
     else:
