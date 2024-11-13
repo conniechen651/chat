@@ -2,7 +2,6 @@ import selectors
 import sys
 import re
 from socket import *
-from requests import get
 
 port = sys.argv[1]
 print("Type 'help' for available commands.\n")
@@ -79,21 +78,16 @@ def handle_stdin_input(data):
     
     ############### MYIP ###############
     elif data == "myip":
-        ## not working??
-        hostname = gethostname()
-        IPAddr = gethostbyname(hostname)
-        DnsIPAddr = gethostbyaddr(hostname)
-
-        print("Your Computer IP Address is:" + str(IPAddr))
-        print("According to DNS, your Computer IP Address is:" + str(DnsIPAddr))
-
-        ##print("Your IP is: " + gethostbyname(gethostname()))
-        print()
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        print("Your Computer IP Address is:" + s.getsockname()[0])
+        s.close()
+        print("---------------------------")
     
     ############### MYPORT ###############
     elif data == "myport":
         print("Your port is: " + port)
-        print()
+        print("---------------------------")
     
     ############### CONNECT ###############
     elif data.startswith("connect"):
@@ -105,12 +99,14 @@ def handle_stdin_input(data):
                 return
         client = start_client(dest_ip, dest_port) ## call function to create client socket
         list_of_connections.append([dest_ip, dest_port, client]) ## add client to list of connections
+        print("---------------------------")
     
     ############### LIST ###############
     elif data == "list":
         print("id:\tIP address:\t\tPort number:")
         for i in range(len(list_of_connections)):
             print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + str(list_of_connections[i][1]))
+        print("---------------------------")
     
     ############### TERMINATE ###############
     elif data.startswith("terminate"):
@@ -120,6 +116,7 @@ def handle_stdin_input(data):
             list_of_connections.pop(connection_id-1)
         else:
             print("Invalid connection ID. Try again.")
+        print("---------------------------")
 
     ############### SEND ###############
     elif data.startswith("send"):
@@ -133,8 +130,10 @@ def handle_stdin_input(data):
             print("Message sent to " + str(list_of_connections[connection_id-1][0]) + " on port " + str(list_of_connections[connection_id-1][1]))
         else:
             print("Invalid connection ID. Try again.")
+        print("---------------------------")
     else:
         print("Invalid command. Type 'help' for available commands.")
+        print("---------------------------")
 
 def main():
     sel.register(sys.stdin, selectors.EVENT_READ, handle_stdin_input)
