@@ -20,6 +20,7 @@ def start_server(port):
 ## create client socket
 def start_client(dest_ip, dest_port):
     client_socket = socket(AF_INET, SOCK_STREAM)
+    client_socket.settimeout(10) ## set timeout to 10 seconds
     client_socket.connect((dest_ip, int(dest_port)))
     client_socket.setblocking(False)
     print("Connected to " + dest_ip + " on port " + dest_port)
@@ -97,8 +98,11 @@ def handle_stdin_input(data):
             if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port:
                 print("Already connected to " + dest_ip + " on port " + dest_port)
                 return
-        client = start_client(dest_ip, dest_port) ## call function to create client socket
-        list_of_connections.append([dest_ip, dest_port, client]) ## add client to list of connections
+        try:
+            client = start_client(dest_ip, dest_port) ## call function to create client socket
+            list_of_connections.append([dest_ip, dest_port, client]) ## add client to list of connections
+        except error:
+            print("Error: " + str(error))
         print("---------------------------")
     
     ############### LIST ###############
