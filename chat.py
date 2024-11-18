@@ -74,7 +74,7 @@ def handle_socket_message(connection_socket):
 list_of_connections = []
 
 
-def handle_stdin_input(data):
+def handle_stdin_input(server_socket):
     data = input()
     if data == "help":
         print("----------------------------------------------------")
@@ -89,7 +89,7 @@ def handle_stdin_input(data):
         print()
     ############### EXIT ###############
     elif data == "exit":
-        ##server_socket.close()
+        server_socket.close()
         sys.exit()
     
     ############### MYIP ###############
@@ -174,10 +174,9 @@ def handle_stdin_input(data):
 
 def main():
     
-    sel.register(sys.stdin, selectors.EVENT_READ, handle_stdin_input)
-    
     server = start_server(port)
-
+    sel.register(sys.stdin, selectors.EVENT_READ, lambda _: handle_stdin_input(server))
+    
     while True:
         events = sel.select()
         for key, mask in events:
