@@ -45,8 +45,10 @@ def handle_new_socket_connection(server_socket):
     port = connection_socket.recv(1024).decode()
     print("Connection from: " + str(addr))
     sel.register(connection_socket, selectors.EVENT_READ, handle_socket_message)
+    ## check if existing connection already exists
     for i in range(len(list_of_connections)):
         if list_of_connections[i][0] == addr[0] and list_of_connections[i][1] == port:
+            list_of_connections[i][2] = connection_socket
             return
     list_of_connections.append([addr[0], port, connection_socket, -1])
 
@@ -60,11 +62,8 @@ def handle_socket_message(connection_socket):
         print("---------------------------")
     else:
         print("Connection closed")
-        print(list_of_connections[0])
-        print(connection_socket.getpeername()[1])
         for i in range(len(list_of_connections)):
-            if list_of_connections[i][3] == connection_socket:
-                print(list_of_connections[i])
+            if list_of_connections[i][2] == connection_socket:
                 list_of_connections.pop(i)
         sel.unregister(connection_socket)
         connection_socket.close()
@@ -119,11 +118,11 @@ def handle_stdin_input(server_socket):
         try:
             client = start_client(dest_ip, dest_port) ## call function to create client socket
             for i in range(len(list_of_connections)):
-                if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port:
-                    list_of_connections[i][2] = client.getsockname()[1]
+                if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port: ## one way connection exists
                     list_of_connections[i][3] = client
                     return 
-            list_of_connections.append([dest_ip, dest_port, client.getsockname()[1], client]) ## add client to list of connections
+            ## no connection exists
+            list_of_connections.append([dest_ip, dest_port, -1, client]) ## add client to list of connections
         except error:
             print("Error: " + str(error))
         print("---------------------------")
@@ -132,7 +131,7 @@ def handle_stdin_input(server_socket):
     elif data == "list":
         print("id:\tIP address:\t\tPort number:")
         for i in range(len(list_of_connections)):
-            print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + str(list_of_connections[i][1]) + "\t"+ str(list_of_connections[i][2]) + "\t" + str(list_of_connections[i][3]))
+            print(str(i+1) + "\t" + list_of_connections[i][0] + "\t\t" + str(list_of_connections[i][1]))
         print("---------------------------")
     
     ############### TERMINATE ###############
@@ -142,9 +141,12 @@ def handle_stdin_input(server_socket):
             return
         connection_id = int(data.split()[1])
         if connection_id <= len(list_of_connections):
-            list_of_connections[connection_id-1][3].close()
-            list_of_connections.pop(connection_id-1)
-            print("Connection with connection ID #" + str(connection_id) + " terminated")
+            if list_of_connections[connection_id-1][3] != -1:
+                list_of_connections[connection_id-1][3].close()
+                list_of_connections.pop(connection_id-1)
+                print("Connection with connection ID #" + str(connection_id) + " terminated")
+            else:
+                print("Connection not established yet. Try again.")
         else:
             print("Invalid connection ID. Try again.")
         print("---------------------------")
