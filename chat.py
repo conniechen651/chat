@@ -59,8 +59,9 @@ def handle_socket_message(connection_socket):
         print("---------------------------")
     else:
         print("Connection closed")
+        print(connection_socket.getpeername())
         for i in range(len(list_of_connections)):
-            if list_of_connections[i][1] == connection_socket.getpeername()[0] and list_of_connections[i][1] == connection_socket.getpeername()[1]:
+            if list_of_connections[i][0] == connection_socket.getpeername()[0] and list_of_connections[i][1] == connection_socket.getpeername()[1]:
                 list_of_connections.pop(i)
         sel.unregister(connection_socket)
         connection_socket.close()
