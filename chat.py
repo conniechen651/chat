@@ -4,6 +4,13 @@ import re
 from socket import *
 
 port = sys.argv[1]
+
+## get IP address
+s = socket(AF_INET, SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+ip_addr = s.getsockname()[0]
+s.close()
+
 print("Type 'help' for available commands.\n")
 
 sel = selectors.DefaultSelector()
@@ -22,32 +29,31 @@ def start_client(dest_ip, dest_port):
     client_socket = socket(AF_INET, SOCK_STREAM)
     client_socket.settimeout(10) ## set timeout to 10 seconds
     client_socket.connect((dest_ip, int(dest_port)))
+    client_socket.send(str(port).encode())
     client_socket.setblocking(False)
     print("Connected to " + dest_ip + " on port " + dest_port)
     return client_socket
 
-## function to send a message, including the listening port number so it can be added to receiver's list of connections
+## function to send a message
 def send_message(connection_socket, message):
-    message = str(port) + ";" + message
     connection_socket.send(message.encode())
 
 ## function to handle new socket connection
 def handle_new_socket_connection(server_socket):
     connection_socket, addr = server_socket.accept()
+    port = connection_socket.recv(1024).decode()
     print("Connection from: " + str(addr))
     sel.register(connection_socket, selectors.EVENT_READ, handle_socket_message)
+    list_of_connections.append([connection_socket.getpeername()[0], port, connection_socket])
 
 ## function to handle messages received from other sockets
 def handle_socket_message(connection_socket):
-    data = connection_socket.recv(1024).decode().split(";") ## split message into listening port and data
-    print(data)
+    data = connection_socket.recv(1024).decode()
     if data:
-        listening_port = data[0]
-        data = data[1]
-        list_of_connections.append([connection_socket.getpeername()[0], listening_port, connection_socket])
         print("Message received from: " + str(connection_socket.getpeername()[0]))
         print("Sender's Port: " + str(connection_socket.getpeername()[1]))
-        print("Message: " + data) 
+        print("Message: " + data)
+        print("---------------------------")
     else:
         print("Connection closed")
         sel.unregister(connection_socket)
@@ -79,10 +85,7 @@ def handle_stdin_input(data):
     
     ############### MYIP ###############
     elif data == "myip":
-        s = socket(AF_INET, SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        print("Your Computer IP Address is:" + s.getsockname()[0])
-        s.close()
+        print("Your IP Address is: " + ip_addr)   
         print("---------------------------")
     
     ############### MYPORT ###############
@@ -94,6 +97,9 @@ def handle_stdin_input(data):
     elif data.startswith("connect"):
         dest_ip = data.split()[1]
         dest_port = data.split()[2]
+        if dest_ip == ip_addr and dest_port == port:
+            print("Cannot connect to yourself")
+            return
         for i in range(len(list_of_connections)):
             if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port:
                 print("Already connected to " + dest_ip + " on port " + dest_port)
@@ -130,8 +136,14 @@ def handle_stdin_input(data):
         connection_id = int(data.split()[1])
         message = re.split('(\d\s+)', data, 1)[2]
         if connection_id <= len(list_of_connections):
-            send_message(list_of_connections[connection_id-1][2], message)
-            print("Message sent to " + str(list_of_connections[connection_id-1][0]) + " on port " + str(list_of_connections[connection_id-1][1]))
+            # if list_of_connections[connection_id-1][2] == -1:
+            #     print("Connection not established yet. Try again.")
+            #     return
+            try:
+                send_message(list_of_connections[connection_id-1][2], message)
+                print("Message sent to " + str(list_of_connections[connection_id-1][0]) + " on port " + str(list_of_connections[connection_id-1][1]))
+            except error:
+                print("Error: " + str(error))
         else:
             print("Invalid connection ID. Try again.")
         print("---------------------------")
