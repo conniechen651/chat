@@ -1,7 +1,6 @@
 import selectors
 import sys
 import re
-import logging
 from socket import *
 
 port = sys.argv[1]
