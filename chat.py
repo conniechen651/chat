@@ -128,21 +128,25 @@ def handle_stdin_input(server_socket):
     elif data.startswith("connect"):
         if re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\s\d{4,5}\b", data) == None: ## error checking for valid IP and port
             print("Invalid command. Try again.")
+            main_menu()
             return
         dest_ip = data.split()[1]
         dest_port = data.split()[2]
         if dest_ip == ip_addr and dest_port == port:
             print("Cannot connect to yourself.")
+            main_menu()
             return
         for i in range(len(list_of_connections)):
             if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port and list_of_connections[i][3] != -1:
                 print("Already connected to " + dest_ip + " on port " + dest_port)
+                main_menu()
                 return
         try:
             client = start_client(dest_ip, dest_port) ## call function to create client socket
             for i in range(len(list_of_connections)):
                 if list_of_connections[i][0] == dest_ip and list_of_connections[i][1] == dest_port: ## one way connection exists
                     list_of_connections[i][3] = client
+                    main_menu()
                     return 
             ## no connection exists
             list_of_connections.append([dest_ip, dest_port, -1, client]) ## add client to list of connections
@@ -161,6 +165,7 @@ def handle_stdin_input(server_socket):
     elif data.startswith("terminate"):
         if re.search('\d+', data) == None: ## error checking to make sure there is a connection ID
             print("Invalid command. Try again.")
+            main_menu()
             return
         connection_id = int(data.split()[1])
         if connection_id <= len(list_of_connections):
@@ -178,12 +183,14 @@ def handle_stdin_input(server_socket):
     elif data.startswith("send"):
         if re.search('\d+\s', data) == None: ## error checking to make sure there is a connection ID
             print("Invalid command. Try again.")
+            main_menu()
             return
         connection_id = int(data.split()[1])
         message = re.split('(\d\s+)', data, 1)[2]
         if connection_id <= len(list_of_connections):
             if list_of_connections[connection_id-1][3] == -1:
                 print("Connection not established yet. Try again.")
+                main_menu()
                 return
             try:
                 send_message(list_of_connections[connection_id-1][3], message)
