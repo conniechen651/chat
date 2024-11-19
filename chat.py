@@ -65,20 +65,23 @@ def handle_new_socket_connection(server_socket):
 
 ## function to handle messages received from other sockets
 def handle_socket_message(connection_socket):
-    data = connection_socket.recv(1024).decode()
-    if data:
-        print("Message received from: " + str(connection_socket.getpeername()[0]))
-        print("Sender's Port: " + str(connection_socket.getpeername()[1]))
-        print("Message: " + data)
-        print("---------------------------")
-    else:
-        print("Connection closed")
-        for i in range(len(list_of_connections)):
-            if list_of_connections[i][2] == connection_socket:
+    try:
+        data = connection_socket.recv(1024).decode()
+        if data:
+            print("Message received from: " + str(connection_socket.getpeername()[0]))
+            print("Sender's Port: " + str(connection_socket.getpeername()[1]))
+            print("Message: " + data)
+            print("---------------------------")
+        else:
+            raise ConnectionResetError
+    except (ConnectionResetError, OSError):
+        for i, connection in enumerate(list_of_connections):
+            if connection[2] == connection_socket:
+                print(f"Connection closed by user {i + 1}: IP Address was {connection[0]}: Port Number was {connection[1]}")
                 list_of_connections.pop(i)
-        sel.unregister(connection_socket)
-        connection_socket.close()
-
+                break
+    sel.unregister(connection_socket)
+    connection_socket.close()
 
 ## create list to store all connections
 list_of_connections = []
@@ -134,6 +137,11 @@ def handle_stdin_input(server_socket):
         dest_port = data.split()[2]
         if dest_ip == ip_addr and dest_port == port:
             print("Cannot connect to yourself.")
+            main_menu()
+            return
+        #Validating port range
+        if not (0 <= int(dest_port) <= 65535):
+            print("Invalid port number. Port must be between 0 and 65535; try again.")
             main_menu()
             return
         for i in range(len(list_of_connections)):
