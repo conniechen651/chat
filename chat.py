@@ -83,7 +83,7 @@ def handle_socket_message(connection_socket):
 ## create list to store all connections
 list_of_connections = []
 
-def show_main_menu():
+def main_menu():
     print("\nMain Menu:")
     print("1. myip")
     print("2. myport")
@@ -197,10 +197,12 @@ def handle_stdin_input(server_socket):
         print("Invalid command. Type 'help' for available commands.")
         print("---------------------------")
 
+    main_menu()
+
 def main():
     
     server = start_server(port)
-    show_main_menu()
+    main_menu()
     sel.register(sys.stdin, selectors.EVENT_READ, lambda _: handle_stdin_input(server))
     
     while True:
