@@ -1,6 +1,7 @@
 import selectors
 import sys
 import re
+import logging
 from socket import *
 
 port = sys.argv[1]
@@ -17,23 +18,33 @@ sel = selectors.DefaultSelector()
 
 ## create server socket
 def start_server(port):
-    server_socket = socket(AF_INET, SOCK_STREAM)
-    server_socket.bind((ip_addr, int(port))) 
-    server_socket.listen(1)
-    server_socket.setblocking(False)
-    print("Listening on port " + str(port))
-    sel.register(server_socket, selectors.EVENT_READ, handle_new_socket_connection)
-    return server_socket
+    try:
+        server_socket = socket(AF_INET, SOCK_STREAM)
+        server_socket.bind((ip_addr, int(port))) 
+        server_socket.listen(1)
+        server_socket.setblocking(False)
+        print("Listening on port " + str(port))
+        sel.register(server_socket, selectors.EVENT_READ, handle_new_socket_connection)
+        return server_socket
+    except OSError as e:
+        print(f"There was an error starting server: {e}")
+        sys.exit(1) #If server fails to start, exit program
+    
 
 ## create client socket
 def start_client(dest_ip, dest_port):
-    client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.settimeout(10) ## set timeout to 10 seconds
-    client_socket.connect((dest_ip, int(dest_port)))
-    client_socket.send(str(port).encode())
-    client_socket.setblocking(False)
-    print("Connected to " + dest_ip + " on port " + dest_port)
-    return client_socket
+    try:
+        client_socket = socket(AF_INET, SOCK_STREAM)
+        client_socket.settimeout(10) ## set timeout to 10 seconds
+        client_socket.connect((dest_ip, int(dest_port)))
+        client_socket.send(str(port).encode())
+        client_socket.setblocking(False)
+        print("Connected to " + dest_ip + " on port " + dest_port)
+        return client_socket
+    except (TimeoutError, ConnectRefusedError) as e:
+        print(f"Connection failed: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 ## function to send a message
 def send_message(connection_socket, message):
@@ -71,6 +82,18 @@ def handle_socket_message(connection_socket):
 
 ## create list to store all connections
 list_of_connections = []
+
+def show_main_menu():
+    print("\nMain Menu:")
+    print("1. myip")
+    print("2. myport")
+    print("3. connect")
+    print("4. list")
+    print("5. terminate")
+    print("6. send")
+    print("7. help")
+    print("8. exit")
+    print("Please type the name of the command you wish to use:")
 
 
 def handle_stdin_input(server_socket):
@@ -177,6 +200,7 @@ def handle_stdin_input(server_socket):
 def main():
     
     server = start_server(port)
+    show_main_menu()
     sel.register(sys.stdin, selectors.EVENT_READ, lambda _: handle_stdin_input(server))
     
     while True:
@@ -184,7 +208,6 @@ def main():
         for key, mask in events:
             callback = key.data
             callback(key.fileobj)
-
 
 main()
 
