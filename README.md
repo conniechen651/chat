@@ -5,7 +5,7 @@ Group 5: Jordan Aviles and Connie Chen
 Each member's contributions:  
 Jordan: Server Socket, Main Menu Implementation, Command and Error Handling, Connection Validation with IP and Port Inputs, and Termination Handling with Displayable Information. 
 
-Connie: client socket, ...  
+Connie: Client Socket, Sending Messages, Handling Receiving Messages, Adding and Removing from Connection List, Display Port and IP Information, Implementing the Selector for I/O, and Input Error Detection.
 
   
 Instructions for running the program:    

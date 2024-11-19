@@ -40,7 +40,7 @@ def start_client(dest_ip, dest_port):
         client_socket.setblocking(False)
         print("Connected to " + dest_ip + " on port " + dest_port)
         return client_socket
-    except (TimeoutError, ConnectRefusedError) as e:
+    except (TimeoutError, ConnectionRefusedError) as e:
         print(f"Connection failed: {e}")
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -79,8 +79,8 @@ def handle_socket_message(connection_socket):
                 print(f"Connection closed by user {i + 1}: IP Address was {connection[0]}: Port Number was {connection[1]}")
                 list_of_connections.pop(i)
                 break
-    sel.unregister(connection_socket)
-    connection_socket.close()
+        sel.unregister(connection_socket)
+        connection_socket.close()
 
 ## create list to store all connections
 list_of_connections = []
@@ -92,8 +92,8 @@ def main_menu():
     print("3. myport")
     print("4. connect <destination> <port no>")
     print("5. list")
-    print("6. terminate")
-    print("7. send")
+    print("6. terminate <connection ID>")
+    print("7. send <connection ID> <message>")
     print("8. exit")
     print("Please type the name of the command you wish to use:")
 
