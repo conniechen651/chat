@@ -87,13 +87,13 @@ list_of_connections = []
 
 def main_menu():
     print("\nMain Menu:")
-    print("1. myip")
-    print("2. myport")
-    print("3. connect")
-    print("4. list")
-    print("5. terminate")
-    print("6. send")
-    print("7. help")
+    print("1. help")
+    print("2. myip")
+    print("3. myport")
+    print("4. connect <destination> <port no>")
+    print("5. list")
+    print("6. terminate")
+    print("7. send")
     print("8. exit")
     print("Please type the name of the command you wish to use:")
 
